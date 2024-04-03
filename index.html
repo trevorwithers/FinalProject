@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="app" v-cloak>
+        <div v-if="errorMessage" class="error-message">
+            {{ errorMessage }}
+        </div>
+        <div v-if="optionContent" class="cardMain">
+            <h1 class="centered-title">{{ title }}</h1>
+            <p>Welcome to the Dungeons and Dragons API. Please select one of the following options to get started. You
+                can view all of the available spells or monsters from the 5th edition of Dungeons and Dragons.</p>
+            <div class="centered-buttons">
+                <button @click="showSpellsPage">Spells</button>
+                <button @click="showMonstersPage">Monsters</button>
+            </div>
+        </div>
+        <div v-if="spellContent">
+            <div class="title-container">
+                <h1 class="centered-title">{{ title }}</h1>
+                <button class="back-button" @click="showOptionPage">Back</button>
+            </div>
+            <div class="centered-buttons">
+                <select name="spells" id="spellList" v-model="index" @change="fetchSpellByName(index)">
+                    <option value="" selected disabled>Choose a spell</option>
+                    <option v-for="item in names" :value="item.index">{{ item.name }}</option>
+                </select>
+                <h2> OR </h2>
+                <button @click="fetchSpell">Get All Spells</button>
+            </div>
+            <div v-if="spells.length > 0">
+                <div class="button-container">
+                    <button @click="first">First</button>
+                    <div>
+                        <button @click="prev">Prev</button>
+                        <button @click="next">Next</button>
+                    </div>
+                    <button @click="last">Last</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Link</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="resource in spells">
+                            <td>{{ resource.name }}</td>
+                            <td><button @click="fetchSpellByName(resource.index)">Details</button></td>
+                        </tr>
+                </table>
+            </div>
+            <div v-if="spellDetails.length > 0" class="cardMain">
+                <h2>{{ spellDetails[0].name }}</h2>
+                <div class="card-content">
+                    <div class="card">
+                        <h3>General Information</h3>
+                        <p>Range: {{ spellDetails[0].range }}</p>
+                        <p>Material: {{ spellDetails[0].material }}</p>
+                        <p>Ritual: {{ spellDetails[0].ritual }}</p>
+                        <p>Duration: {{ spellDetails[0].duration }}</p>
+                    </div>
+                    <div class="card">
+                        <h3>Casting Details</h3>
+                        <p>Concentration: {{ spellDetails[0].concentration }}</p>
+                        <p>Casting Time: {{ spellDetails[0].casting_time }}</p>
+                        <p>Level: {{ spellDetails[0].level }}</p>
+                        <p v-if="spellDetails[0].attack_type">Attack Type: {{ spellDetails[0].attack_type }}</p>
+                    </div>
+                    <div class="card">
+                        <h3>Description</h3>
+                        <p v-for="desc in spellDetails[0].desc">{{ desc }}</p>
+                    </div>
+                    <div v-if="spellDetails[0].damage" class="card">
+                        <h3>Damage</h3>
+                        <p>Damage Type: {{ spellDetails[0].damage.damage_type.name }}</p>
+                        <div v-if="spellDetails[0].damage.damage_at_slot_level">
+                            <h4>Damage At Slot Level</h4>
+                            <table>
+                                <thead>
+                                    <th>Slot Level</th>
+                                    <th>Damage</th>
+                                </thead>
+                                <tr v-for="(damage, key) in spellDetails[0].damage.damage_at_slot_level">
+                                    <td>{{ key }}</td>
+                                    <td>{{ damage }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div v-if="spellDetails[0].higher_level.length > 0" class="card">
+                        <h3>Higher Level</h3>
+                        <ul>
+                            <li v-for="level in spellDetails[0].higher_level">{{ level }}</li>
+                        </ul>
+                    </div>
+                    <div v-if="spellDetails[0].components.length > 0" class="card">
+                        <h3>Components</h3>
+                        <ul>
+                            <li v-for="component in spellDetails[0].components">{{ component }}</li>
+                        </ul>
+                    </div>
+                    <div v-if="spellDetails[0].classes.length > 0" class="card">
+                        <h3>Classes</h3>
+                        <ul>
+                            <li v-for="cls in spellDetails[0].classes">{{ cls.name }}</li>
+                        </ul>
+                    </div>
+                    <div v-if="spellDetails[0].subclasses.length > 0" class="card">
+                        <h3>Subclasses</h3>
+                        <ul>
+                            <li v-for="subcls in spellDetails[0].subclasses">{{ subcls.name }}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div v-if="monsterContent">
+            <div class="title-container">
+                <h1 class="centered-title">{{ title }}</h1>
+                <button class="back-button" @click="showOptionPage">Back</button>
+            </div>
+            <div class="centered-buttons">
+                <select name="monsters" id="monsterList" v-model="index" @change="fetchMonsterByName(index)">
+                    <option value="" selected disabled>Choose a monster</option>
+                    <option v-for="item in names" :value="item.index">{{ item.name }}</option>
+                </select>
+                <h2> OR </h2>
+                <button @click="fetchMonster">Get All Monsters</button>
+            </div>
+            <div v-if="monsters.length > 0">
+                <div class="button-container">
+                    <button @click="first">First</button>
+                    <div>
+                        <button @click="prev">Prev</button>
+                        <button @click="next">Next</button>
+                    </div>
+                    <button @click="last">Last</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Link</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="resource in monsters">
+                            <td>{{ resource.name }}</td>
+                            <td><button @click="fetchMonsterByName(resource.index)">Details</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div v-if="monsterDetails.length > 0" class="cardMain
+                ">
+                <h2>{{ monsterDetails[0].name }}</h2>
+                <img :src="'https://www.dnd5eapi.co' + monsterDetails[0].image" alt="Monster Image"
+                    v-if="monsterDetails[0].image">
+                <div class="card-content">
+                    <div class="card">
+                        <h3>General Information</h3>
+                        <p>Size: {{ monsterDetails[0].size }}</p>
+                        <p>Type: {{ monsterDetails[0].type }}</p>
+                        <p>Alignment: {{ monsterDetails[0].alignment }}</p>
+                        <p>Languages: {{ monsterDetails[0].languages }}</p>
+                    </div>
+                    <div class="card" v-if="monsterDetails[0].armor_class">
+                        <h3>Armor Class</h3>
+                        <ul>
+                            <li v-for="ac in monsterDetails[0].armor_class">{{ ac.type }}: {{ ac.value }}</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Health and Hit Dice</h3>
+                        <p>Hit Points: {{ monsterDetails[0].hit_points }}</p>
+                        <p>Hit Dice: {{ monsterDetails[0].hit_dice }}</p>
+                        <p>Hit Points Roll: {{ monsterDetails[0].hit_points_roll }}</p>
+                    </div>
+                    <div class="card" v-if="monsterDetails[0].speed">
+                        <h3>Speed</h3>
+                        <ul>
+                            <li v-for="(value, key) in monsterDetails[0].speed">{{ key }}: {{ value }}</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Abilities</h3>
+                        <p>Strength: {{ monsterDetails[0].strength }}</p>
+                        <p>Dexterity: {{ monsterDetails[0].dexterity }}</p>
+                        <p>Constitution: {{ monsterDetails[0].constitution }}</p>
+                        <p>Intelligence: {{ monsterDetails[0].intelligence }}</p>
+                        <p>Wisdom: {{ monsterDetails[0].wisdom }}</p>
+                        <p>Charisma: {{ monsterDetails[0].charisma }}</p>
+                    </div>
+                    <div class="card" v-if="monsterDetails[0].proficiencies.length > 0">
+                        <h3>Proficiencies</h3>
+                        <ul>
+                            <li v-for="prof in monsterDetails[0].proficiencies">{{ prof.value }}: {{
+                                prof.proficiency.name }}</li>
+                        </ul>
+                    </div>
+                    <div v-if="monsterDetails[0].damage_vulnerabilities.length > 0" class="card">
+                        <h3>Damage Vulnerabilities</h3>
+                        <ul>
+                            <li v-for="vuln in monsterDetails[0].damage_vulnerabilities">{{ vuln }}</li>
+                        </ul>
+                    </div>
+                    <div v-if="monsterDetails[0].damage_resistances.length > 0" class="card">
+                        <h3>Damage Resistances</h3>
+                        <ul>
+                            <li v-for="res in monsterDetails[0].damage_resistances">{{ res }}</li>
+                        </ul>
+                    </div>
+                    <div v-if="monsterDetails[0].damage_immunities.length > 0" class="card">
+                        <h3>Damage Immunities</h3>
+                        <ul>
+                            <li v-for="imm in monsterDetails[0].damage_immunities">{{ imm }}</li>
+                        </ul>
+                    </div>
+                    <div v-if="monsterDetails[0].condition_immunities.length > 0" class="card">
+                        <h3>Condition Immunities</h3>
+                        <ul>
+                            <li v-for="imm in monsterDetails[0].condition_immunities">{{ imm.name }}</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Senses</h3>
+                        <ul>
+                            <li v-for="(value, key) in monsterDetails[0].senses">{{ key }}: {{ value }}</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Challenge Rating and Proficiency Bonus</h3>
+                        <p>Challenge Rating: {{ monsterDetails[0].challenge_rating }}</p>
+                        <p>Proficiency Bonus: {{ monsterDetails[0].proficiency_bonus }}</p>
+                        <p>XP: {{ monsterDetails[0].xp }}</p>
+                    </div>
+                    <div v-if="monsterDetails[0].special_abilities.length > 0" class="card">
+                        <h3>Special Abilities</h3>
+                        <ul>
+                            <li v-for="ability in monsterDetails[0].special_abilities">
+                                <h4>{{ ability.name }}</h4>
+                                <p>{{ ability.desc }}</p>
+                                <ul v-if="ability.dc.dc_type.name !== ''">
+                                    <label for="dcType">DC Type</label>
+                                    <p id="dcType">{{ ability.dc.dc_type.name }}: {{ ability.dc.dc_value }}</p>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                    <div v-if="monsterDetails[0].actions.length > 0" class="card">
+                        <h3>Actions</h3>
+                        <ul>
+                            <li v-for="(item, index) in monsterDetails[0].actions">
+                                <h4>{{ item.name }}</h4>
+                                <p>{{ item.desc }}</p>
+                                <p v-if="item.attack_bonus">Attack Bonus: {{ item.attack_bonus }}</p>
+                                <div v-if="item.actions && item.actions.length">
+                                    <h3>Subactions</h3>
+                                    <ul v-for="subaction in item.actions">
+                                        <li v-if="subaction.action_name">{{ subaction.action_name }}: {{ subaction.type
+                                            }}, {{ subaction.count }} times per round</li>
+                                    </ul>
+                                </div>
+                                <div v-if="item.damage && item.damage.length">
+                                    <h3>Damage</h3>
+                                    <ul v-for="damage in item.damage">
+                                        <li>{{ damage.damage_type.name }}: {{ damage.damage_dice }}</li>
+                                    </ul>
+                                </div>
+                                <div v-if="item.usage.times > 0">
+                                    <h3>Usage</h3>
+                                    <ul>
+                                        <li>{{ item.usage.times }} times {{ item.usage.type }}</li>
+                                    </ul>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div v-if="monsterDetails[0].legendary_actions.length > 0" class="card">
+                        <h3>Legendary Actions</h3>
+                        <ul>
+                            <li v-for="action in monsterDetails[0].legendary_actions">
+                                <h4>{{ action.name }}</h4>
+                                <p>{{ action.desc }}</p>
+                                <p v-if="action.attack_bonus > 0">Attack Bonus: {{ action.attack_bonus }}</p>
+                                <div v-if="action.damage && action.damage.length">
+                                    <h3>Damage</h3>
+                                    <ul v-for="damage in action.damage">
+                                        <li>{{ damage.damage_type.name }}: {{ damage.damage_dice }}</li>
+                                    </ul>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <footer>
+            <div class="footer-content">
+                <p>Trevor Withers</p>
+                <a href="mailto:trevor.withers@student.sl.on.ca">trevor.withers@student.sl.on.ca</a>
+                <p>{{ formatDate(currentDate) }}</p>
+            </div>
+        </footer>
+    </div>
+    <script src="https://unpkg.com/vue@3"></script>
+    <script type="text/javascript" src="script.js"></script>
+</body>
+
+</html>
